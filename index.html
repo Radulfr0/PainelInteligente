@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Painel Pessoal Inteligente - Estilo Windows Avançado</title>
+    <style>
+        :root {
+            --widget-bg: rgba(35, 35, 45, 0.7); /* Um pouco mais escuro para contraste */
+            --widget-border-color: rgba(255, 255, 255, 0.08);
+            --text-color-primary: #f0f4f8;
+            --text-color-secondary: #a8b0b8;
+            --accent-color: #0078d4;
+            --accent-color-hover: #005a9e;
+            --border-radius-large: 10px;
+            --border-radius-medium: 6px;
+            --border-radius-small: 4px;
+            --font-family: 'Segoe UI', SegoeUI, "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-image: url('https://source.unsplash.com/random/1920x1080/?windows,desktop,abstract'); /* Adicionado abstract para variedade */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-color-primary);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .global-header {
+            padding: 15px 25px;
+            background: rgba(20, 20, 30, 0.5); /* Mais escuro e menos transparente que os widgets */
+            backdrop-filter: blur(10px); /* Menor blur que os widgets para hierarquia */
+            color: var(--text-color-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--widget-border-color);
+            position: sticky; /* Fixar no topo */
+            top: 0;
+            z-index: 1000;
+        }
+        .global-header .date-time {
+            font-weight: 500;
+        }
+        .global-header .greeting {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color-primary);
+        }
+
+        main#widgetContainer {
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 25px;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-auto-rows: minmax(180px, auto);
+            gap: 20px;
+            align-items: start;
+            flex-grow: 1; /* Para ocupar espaço restante */
+        }
+
+        section.widget {
+            background: var(--widget-bg);
+            -webkit-backdrop-filter: blur(22px) saturate(110%);
+            backdrop-filter: blur(22px) saturate(110%);
+            border-radius: var(--border-radius-large);
+            border: 1px solid var(--widget-border-color);
+            padding: 0; /* Padding será no header e content */
+            cursor: grab;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease, transform 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Importante para border-radius nos filhos */
+            min-height: 180px; /* Altura mínima base */
+        }
+        section.widget:active { cursor: grabbing; box-shadow: 0 10px 28px rgba(0,0,0,0.35); transform: scale(1.01); }
+        .dragging { opacity: 0.6; border: 2px dashed var(--accent-color); background: rgba(0,0,0,0.4); }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+        }
+        .widget-header h2 {
+            margin: 0;
+            color: var(--text-color-primary);
+            font-size: 1rem; /* Pouco menor para mais espaço para conteúdo */
+            font-weight: 600;
+            user-select: none;
+        }
+        .widget-options {
+            color: var(--text-color-secondary); cursor: pointer; font-size: 1.1rem;
+            padding: 5px; border-radius: 50%; line-height: 1;
+        }
+        .widget-options:hover { color: var(--text-color-primary); background-color: rgba(255,255,255,0.1); }
+
+        .widget-content {
+            padding: 0px 18px 15px 18px; /* Menos padding superior, pois o header já tem */
+            flex-grow: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) transparent;
+        }
+        .widget-content::-webkit-scrollbar { width: 6px; }
+        .widget-content::-webkit-scrollbar-track { background: transparent; }
+        .widget-content::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: var(--border-radius-small); }
+        .widget-content::-webkit-scrollbar-thumb:hover { background: var(--accent-color-hover); }
+
+        /* --- Estilos de Componentes Globais --- */
+        input[type="text"], input[type="number"], input[type="search"], textarea, select {
+            background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-medium); padding: 9px 12px; font-size: 0.9rem;
+            color: var(--text-color-primary); outline: none; box-sizing: border-box; width: 100%; margin-bottom: 12px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-color-secondary); opacity: 0.8; }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.4);
+        }
+        button {
+            background-color: var(--accent-color); border: none; border-radius: var(--border-radius-medium);
+            color: white; font-weight: 500; padding: 9px 15px; font-size: 0.9rem;
+            cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; outline: none;
+        }
+        button:hover { background-color: var(--accent-color-hover); }
+        button:active { transform: scale(0.97); }
+
+        /* --- Estilização Específica dos Widgets --- */
+
+        /* Relógio (ocupa mais espaço vertical) */
+        #clockWidget {
+            grid-row: span 2;
+            grid-column: span 1;
+        }
+        #clockWidget .widget-content { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #clock { text-align: center; user-select: none; }
+        #clockTime { font-size: 2.8rem; font-weight: 300; line-height: 1.1; } /* Mais fino para estilo moderno */
+        #clockDate { font-size: 0.95rem; opacity: 0.85; margin-top: 5px; }
+
+        /* Previsão do Tempo */
+        #weatherWidget {
+            grid-column: span 2;
+            grid-row: span 2;
+        }
+        #weatherWidget .widget-content { display: flex; flex-direction: column; }
+        #weatherForm { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        #city { flex-grow: 1; margin-bottom: 0; }
+        #weatherForm button { width: auto; padding: 9px 18px; margin-bottom: 0; }
+        #weatherResult { text-align: left; font-size: 0.9rem; line-height: 1.5; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        .weather-main-info { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .weather-main-info img { width: 72px; height: 72px; background: rgba(255,255,255,0.05); border-radius: 50%; }
+        .weather-temp-city .temp { font-size: 3.2rem; font-weight: 300; line-height: 1; }
+        .weather-temp-city .city-desc strong { font-size: 1.2rem; display: block; color: var(--text-color-primary); }
+        .weather-temp-city .city-desc em { font-size: 0.95rem; color: var(--text-color-secondary); text-transform: capitalize;}
+        .weather-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 12px; font-size: 0.85rem; color: var(--text-color-secondary); }
+        .weather-details span { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .api-key-notice { font-size:0.75rem; text-align:center; margin-top: auto; padding-top:10px; opacity:0.6; }
+
+        /* Notícias de Futebol */
+        #footballNewsWidget {
+            grid-column: span 2;
+            grid-row: span 3;
+        }
+        #footballNewsContainer { display: flex; flex-direction: column; height: 100%; }
+        #footballNewsList { list-style: none; padding: 0; margin:0; flex-grow: 1; overflow-y: auto; }
+        #footballNewsList li {
+            background: rgba(0,0,0,0.15); margin-bottom: 12px; border-radius: var(--border-radius-medium);
+            overflow: hidden; display: flex; gap: 12px; padding: 12px;
+            transition: background-color 0.2s ease;
+        }
+        #footballNewsList li:last-child { margin-bottom: 0; }
+        #footballNewsList li:hover { background: rgba(0,0,0,0.25); }
+        #footballNewsList li img {
+            width: 100px; height: 75px; object-fit: cover;
+            border-radius: var(--border-radius-small); flex-shrink: 0;
+        }
+        .news-content-wrapper { display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; min-width: 0; /* Para ellipsis funcionar */ }
+        .news-content-wrapper a {
+            color: var(--text-color-primary); text-decoration: none; font-weight: 600;
+            font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px;
+        }
+        .news-content-wrapper a:hover { color: var(--accent-color); }
+        .news-content-wrapper small { font-size: 0.75rem; color: var(--text-color-secondary); display: block; margin-top: auto;}
+        .news-loading, .news-error { text-align: center; padding: 20px; color: var(--text-color-secondary); }
+
+        /* Conversor de Moedas */
+        #currencyConverterWidget { grid-column: span 1; grid-row: span 2; }
+        .currency-converter-form { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .currency-converter-form span { text-align: center; font-size: 1rem; color: var(--text-color-secondary); }
+        #conversionResult { text-align: center; font-size: 1rem; font-weight: 600; min-height: 25px; margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.1); border-radius: var(--border-radius-small); }
+
+        /* Bloco de Notas */
+        #notesWidget { grid-row: span 2; }
+        #notesWidget .widget-content { display: flex; } /* Para o textarea crescer */
+        #notes { min-height: 120px; flex-grow:1; resize: none; font-size: 0.9rem; background: rgba(0,0,0,0.15); }
+
+        /* Lista de Tarefas */
+        #todoWidget { grid-row: span 2; }
+        #taskSection { display: flex; flex-direction: column; height: 100%; }
+        #taskInput { margin-bottom: 10px; }
+        ul#taskList { list-style: none; padding: 0; width: 100%; margin: 0 auto; flex-grow: 1; overflow-y: auto; }
+        ul#taskList li {
+            background: rgba(0,0,0,0.1); margin: 5px 0; padding: 8px 12px; border-radius: var(--border-radius-small);
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;
+        }
+        ul#taskList li .task-text { flex-grow: 1; margin-right: 10px; word-break: break-word; }
+        ul#taskList li.completed .task-text { text-decoration: line-through; color: var(--text-color-secondary); }
+        ul#taskList .task-actions button {
+            background-color: transparent; border: none; font-weight: 600;
+            cursor: pointer; font-size: 1rem; padding: 4px 6px; color: var(--text-color-secondary);
+            line-height: 1;
+        }
+        ul#taskList .task-actions button:hover { color: var(--text-color-primary); }
+        ul#taskList button.complete-btn.completed-task { color: #60d881; }
+
+
+        /* Quadro de Desenho */
+        #drawingWidget { grid-row: span 2; }
+        #drawingCanvas {
+            border: 1px solid rgba(255,255,255,0.05); background-color: #fff; cursor: crosshair; touch-action: none;
+            display: block; margin: 0 auto 10px auto; border-radius: var(--border-radius-small);
+            width: 100%; /* Alterado para width 100% e aspect-ratio */
+            aspect-ratio: 16/9;
+            max-height: 250px; /* Limitar altura máxima */
+        }
+        .canvas-controls { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.8rem; }
+        .canvas-controls label { color: var(--text-color-secondary); }
+        .canvas-controls input[type="color"] { width: 30px; height: 25px; padding: 2px; border-radius: var(--border-radius-small); }
+        .canvas-controls input[type="range"] { width: 70px; }
+        .canvas-controls button { padding: 5px 10px; font-size: 0.8rem; }
+
+        /* Placeholder "Insights" Widget */
+        #insightsWidget {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+        #insightsWidget .widget-content { display:flex; align-items: center; justify-content: center; }
+        .insights-placeholder-content {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; color: var(--text-color-secondary); text-align: center;
+        }
+        .insights-placeholder-content svg { width: 48px; height: 48px; margin-bottom: 10px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <header class="global-header">
+        <div class="date-time" id="globalDateTime">Carregando data...</div>
+        <div class="greeting" id="globalGreeting">Olá!</div>
+    </header>
+
+    <main id="widgetContainer">
+        <!-- Previsão do Tempo (prioridade alta no layout) -->
+        <section class="widget" id="weatherWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Informações Meteorológicas</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <form id="weatherForm" aria-label="Formulário para buscar a previsão do tempo">
+                    <input type="search" id="city" placeholder="Digite a cidade" aria-label="Campo para inserir nome da cidade" required />
+                    <button type="submit">Buscar</button>
+                </form>
+                <div id="weatherResult" aria-live="polite" aria-atomic="true">
+                    <p>Digite uma cidade para ver a previsão.</p>
+                </div>
+                <p class="3c12bc150bdc7d86b054ab9f39486362">Chave da API OpenWeatherMap (openweathermap.org) necessária.</p>
+            </div>
+        <!-- Notícias de Futebol -->
+        <section class="widget" id="footballNewsWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Destaques Esportivos</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <div id="footballNewsContainer">
+                    <p class="news-loading">Carregando notícias...</p>
+                    <ul id="footballNewsList" aria-live="polite"></ul>
+                     <p class="api-key-notice">Chave da API NewsAPI (newsapi.org) necessária.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Relogio e Calendario -->
+        <section class="widget" id="clockWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Agora</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <div id="clock" aria-live="off" aria-atomic="true"> <!-- aria-live="off" para relógios que atualizam a cada segundo -->
+                    <div id="clockTime">--:--</div>
+                    <div id="clockDate">Carregando data...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conversor de Moedas -->
+        <section class="widget" id="currencyConverterWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Conversor de Moedas</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <div class="currency-converter-form">
+                    <input type="number" id="amountToConvert" value="1" min="0" step="any" aria-label="Valor para converter">
+                    <select id="fromCurrency" aria-label="Moeda de origem"></select>
+                    <span>➔</span>
+                    <select id="toCurrency" aria-label="Moeda de destino"></select>
+                </div>
+                <button id="convertCurrencyBtn">Converter</button>
+                <div id="conversionResult" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <!-- Lista de Tarefas -->
+        <section class="widget" id="todoWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Lista de Tarefas</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <div id="taskSection">
+                    <input id="taskInput" type="text" placeholder="Nova tarefa + Enter" aria-label="Campo para inserir tarefa" />
+                    <ul id="taskList" aria-live="polite"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bloco de Notas Rápido -->
+        <section class="widget" id="notesWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Bloco de Notas</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <textarea id="notes" placeholder="Escreva suas anotações aqui..." aria-label="Bloco de notas"></textarea>
+            </div>
+        </section>
+
+        <!-- Placeholder "Insights" -->
+        <section class="widget" id="insightsWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Insights</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <div class="insights-placeholder-content">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zM11 7h2v2h-2zm0 4h2v6h-2z"></path></svg>
+                    <span>Nenhum insight novo no momento.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quadro de Desenho Simples -->
+        <section class="widget" id="drawingWidget" draggable="true">
+            <div class="widget-header">
+                <h2>Quadro de Desenho</h2>
+                <span class="widget-options" title="Opções">…</span>
+            </div>
+            <div class="widget-content">
+                <canvas id="drawingCanvas" width="320" height="180"></canvas> <!-- Width/height iniciais, JS ajustará -->
+                <div class="canvas-controls">
+                    <label for="penColor">Cor:</label>
+                    <input type="color" id="penColor" value="#333333" title="Selecionar cor da caneta">
+                    <label for="lineWidth">Traço:</label>
+                    <input type="range" id="lineWidth" min="1" max="15" value="2" title="Ajustar espessura do traço">
+                    <button id="clearCanvasBtn">Limpar</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- Configuração de Chaves de API ---
+        // SUBSTITUA 'YOUR_API_KEY' PELA SUA CHAVE REAL
+        const OPENWEATHERMAP_API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY';
+        const NEWSAPI_API_KEY = 'YOUR_NEWSAPI_KEY';
+
+        // --- Inicialização Global ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initGlobalHeader();
+            initClock();
+            initWeather();
+            initNotes();
+            initTasks();
+            initDrawingCanvas();
+            initFootballNews();
+            initCurrencyConverter();
+            initWidgetDragAndDrop();
+            initWidgetOptions();
+        });
+
+        function initGlobalHeader() {
+            const dateTimeEl = document.getElementById('globalDateTime');
+            const greetingEl = document.getElementById('globalGreeting');
+            
+            function updateHeader() {
+                const now = new Date();
+                dateTimeEl.textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                
+                const hour = now.getHours();
+                if (hour < 5) greetingEl.textContent = 'Boa madrugada!';
+                else if (hour < 12) greetingEl.textContent = 'Bom dia!';
+                else if (hour < 18) greetingEl.textContent = 'Boa tarde!';
+                else greetingEl.textContent = 'Boa noite!';
+            }
+            updateHeader();
+            setInterval(updateHeader, 60000); // Atualiza a cada minuto
+        }
+
+        function initWidgetOptions() {
+            document.querySelectorAll('.widget-options').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const widget = e.target.closest('.widget');
+                    // Exemplo: Mostrar um menu de contexto ou um modal de configurações
+                    console.log(`Opções para "${widget.querySelector('h2').textContent}" clicado.`);
+                    alert(`Opções para "${widget.querySelector('h2').textContent}" (Funcionalidade a implementar)`);
+                });
+            });
+        }
+
+        // 01. Relógio
+        function initClock() {
+            const timeEl = document.getElementById('clockTime');
+            const dateEl = document.getElementById('clockDate');
+            if (!timeEl || !dateEl) return;
+
+            function updateClock() {
+                const now = new Date();
+                timeEl.textContent = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                dateEl.textContent = now.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+        }
+
+        // 02. Previsão do tempo
+        function initWeather() {
+            const weatherForm = document.getElementById('weatherForm');
+            const weatherResult = document.getElementById('weatherResult');
+            const cityInput = document.getElementById('city');
+
+            if (!weatherForm || !weatherResult || !cityInput) return;
+            const noticeEl = document.querySelector('#weatherWidget .api-key-notice');
+
+            async function fetchWeather(city) {
+                if (!city) {
+                    weatherResult.innerHTML = '<p>Por favor, insira uma cidade.</p>';
+                    return;
+                }
+                if (OPENWEATHERMAP_API_KEY === 'YOUR_OPENWEATHERMAP_API_KEY' || OPENWEATHERMAP_API_KEY === '') {
+                    weatherResult.innerHTML = '<p>Chave da API OpenWeatherMap não configurada.</p>';
+                    if(noticeEl) noticeEl.style.color = 'orange';
+                    return;
+                }
+                if(noticeEl) noticeEl.style.display = 'none'; // Esconde aviso se chave existe
+                weatherResult.innerHTML = '<p>Buscando previsão...</p>';
+                const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${OPENWEATHERMAP_API_KEY}&lang=pt_br&units=metric`;
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => null);
+                        if (response.status === 401) throw new Error('Chave da API inválida.');
+                        if (response.status === 404) throw new Error('Cidade não encontrada.');
+                        throw new Error(errorData?.message || `Erro HTTP: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    const iconUrl = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+                    weatherResult.innerHTML = `
+                        <div class="weather-main-info">
+                            <img src="${iconUrl}" alt="${data.weather[0].description}">
+                            <div class="weather-temp-city">
+                                <div class="temp">${data.main.temp.toFixed(0)}<span style="font-size:0.5em; vertical-align:super;">°C</span></div>
+                                <div class="city-desc">
+                                    <strong>${data.name}, ${data.sys.country}</strong>
+                                    <em>${data.weather[0].description}</em>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="weather-details">
+                            <span>Sensação: <strong>${data.main.feels_like.toFixed(1)}°C</strong></span>
+                            <span>Umidade: <strong>${data.main.humidity}%</strong></span>
+                            <span>Vento: <strong>${data.wind.speed.toFixed(1)} m/s</strong></span>
+                            <span>Pressão: <strong>${data.main.pressure} hPa</strong></span>
+                            <span>Mínima: <strong>${data.main.temp_min.toFixed(1)}°C</strong></span>
+                            <span>Máxima: <strong>${data.main.temp_max.toFixed(1)}°C</strong></span>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error("Erro API Tempo:", error);
+                    weatherResult.innerHTML = `<p>Erro: ${error.message || 'Não foi possível buscar a previsão.'}</p>`;
+                     if(noticeEl && OPENWEATHERMAP_API_KEY !== 'YOUR_OPENWEATHERMAP_API_KEY' && OPENWEATHERMAP_API_KEY !== '') noticeEl.style.display = 'block'; // Mostra aviso de novo se deu erro mas tem chave
+                }
+            }
+            weatherForm.addEventListener('submit', e => { e.preventDefault(); fetchWeather(cityInput.value.trim()); });
+            // Opcional: Carregar uma cidade padrão salva em localStorage ou uma fixa
+            const lastCity = localStorage.getItem('weatherLastCity');
+            if (lastCity) {
+                cityInput.value = lastCity;
+                fetchWeather(lastCity);
+            } else {
+                 weatherResult.innerHTML = '<p>Digite uma cidade e pressione Buscar.</p>';
+            }
+            cityInput.addEventListener('change', () => localStorage.setItem('weatherLastCity', cityInput.value.trim()));
+        }
+
+        // 03. Bloco de Notas
+        function initNotes() {
+            const notesArea = document.getElementById('notes');
+            if (!notesArea) return;
+            notesArea.value = localStorage.getItem('dashboard_notes') || '';
+            notesArea.addEventListener('input', () => localStorage.setItem('dashboard_notes', notesArea.value));
+        }
+
+        // 04. Lista de Tarefas
+        function initTasks() {
+            const taskInput = document.getElementById('taskInput');
+            const taskList = document.getElementById('taskList');
+            if (!taskInput || !taskList) return;
+
+            const loadTasks = () => {
+                const tasks = JSON.parse(localStorage.getItem('dashboard_tasks')) || [];
+                taskList.innerHTML = '';
+                tasks.forEach(task => addTaskToDOM(task.text, task.completed));
+            };
+            const saveTasks = () => {
+                const tasks = Array.from(taskList.querySelectorAll('li')).map(li => ({
+                    text: li.querySelector('.task-text').textContent,
+                    completed: li.classList.contains('completed')
+                }));
+                localStorage.setItem('dashboard_tasks', JSON.stringify(tasks));
+            };
+            const addTaskToDOM = (text, completed = false) => {
+                const li = document.createElement('li');
+                li.classList.toggle('completed', completed);
+                
+                const span = document.createElement('span');
+                span.classList.add('task-text');
+                span.textContent = text;
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'task-actions';
+
+                const completeBtn = document.createElement('button');
+                completeBtn.classList.add('complete-btn');
+                completeBtn.title = completed ? 'Desmarcar tarefa' : 'Concluir tarefa';
+                completeBtn.innerHTML = completed ? '↺' : '✔';
+                if(completed) completeBtn.classList.add('completed-task');
+
+                completeBtn.onclick = () => {
+                    li.classList.toggle('completed');
+                    completeBtn.classList.toggle('completed-task', li.classList.contains('completed'));
+                    completeBtn.title = li.classList.contains('completed') ? 'Desmarcar tarefa' : 'Concluir tarefa';
+                    completeBtn.innerHTML = li.classList.contains('completed') ? '↺' : '✔';
+                    saveTasks();
+                };
+                const deleteBtn = document.createElement('button');
+                deleteBtn.title = 'Remover tarefa';
+                deleteBtn.innerHTML = '🗑️'; // Unicode para lixeira
+                deleteBtn.onclick = () => { li.remove(); saveTasks(); };
+                
+                actionsDiv.append(completeBtn, deleteBtn);
+                li.append(span, actionsDiv);
+                taskList.appendChild(li);
+            };
+            taskInput.addEventListener('keypress', e => {
+                if (e.key === 'Enter' && taskInput.value.trim()) {
+                    addTaskToDOM(taskInput.value.trim());
+                    taskInput.value = '';
+                    saveTasks();
+                }
+            });
+            loadTasks();
+        }
+        
+        // 05. Quadro de Desenho
+        function initDrawingCanvas() {
+            const canvas = document.getElementById('drawingCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const clearButton = document.getElementById('clearCanvasBtn');
+            const penColorInput = document.getElementById('penColor');
+            const lineWidthInput = document.getElementById('lineWidth');
+            let isDrawing = false, lastX = 0, lastY = 0;
+
+            const setCanvasDimensions = () => {
+                const widgetContent = canvas.parentElement;
+                const style = getComputedStyle(widgetContent);
+                const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+                
+                // A altura é derivada da largura mantendo aspect-ratio 16:9
+                // O CSS já define aspect-ratio: 16/9 e width: 100%
+                // Aqui, precisamos definir as dimensões do buffer de desenho do canvas.
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                
+                // Reaplicar configurações do contexto após redimensionar
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                ctx.lineWidth = lineWidthInput.value;
+                ctx.strokeStyle = penColorInput.value;
+            };
+            
+            setCanvasDimensions();
+            const resizeObserver = new ResizeObserver(setCanvasDimensions);
+            resizeObserver.observe(canvas.parentElement); // Observar o .widget-content
+
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const evt = e.touches ? e.touches[0] : e;
+                // Escalar as coordenadas do mouse/toque para o tamanho do buffer do canvas
+                // se o tamanho de exibição do canvas for diferente do tamanho do buffer.
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return { 
+                    x: (evt.clientX - rect.left) * scaleX, 
+                    y: (evt.clientY - rect.top) * scaleY
+                };
+            }
+            const startDrawing = (e) => { 
+                isDrawing = true; 
+                const pos = getPos(e);
+                [lastX, lastY] = [pos.x, pos.y]; 
+                // ctx.beginPath(); // Começa um novo caminho para evitar conectar ao último traço se o mouse saiu e voltou
+                // ctx.moveTo(lastX, lastY);
+                e.preventDefault(); 
+            }
+            const draw = (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                ctx.beginPath(); // Inicia um novo path para cada segmento
+                ctx.moveTo(lastX, lastY); 
+                ctx.lineTo(pos.x, pos.y); 
+                ctx.stroke();
+                [lastX, lastY] = [pos.x, pos.y]; 
+                e.preventDefault();
+            }
+            const stopDrawing = () => { 
+                if (isDrawing) {
+                    // ctx.closePath(); // Fecha o caminho atual
+                    isDrawing = false; 
+                }
+            }
+
+            ['mousedown', 'touchstart'].forEach(evt => canvas.addEventListener(evt, startDrawing, {passive: false}));
+            ['mousemove', 'touchmove'].forEach(evt => canvas.addEventListener(evt, draw, {passive: false}));
+            ['mouseup', 'mouseout', 'touchend', 'touchcancel'].forEach(evt => canvas.addEventListener(evt, stopDrawing));
+            
+            clearButton.addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+            penColorInput.addEventListener('input', (e) => ctx.strokeStyle = e.target.value); // 'input' para live update
+            lineWidthInput.addEventListener('input', (e) => ctx.lineWidth = e.target.value);
+        }
+
+        // 06. Notícias de Futebol
+        async function initFootballNews() {
+            const newsContainer = document.getElementById('footballNewsContainer');
+            const newsList = document.getElementById('footballNewsList');
+            const loadingMsg = newsContainer.querySelector('.news-loading');
+            const noticeEl = newsContainer.querySelector('.api-key-notice');
+
+
+            if (!newsList || !newsContainer) return;
+
+            if (NEWSAPI_API_KEY === 'YOUR_NEWSAPI_KEY' || NEWSAPI_API_KEY === '') {
+                if(loadingMsg) loadingMsg.textContent = 'Chave da NewsAPI não configurada.';
+                if(noticeEl) noticeEl.style.color = 'orange';
+                return;
+            }
+            if(noticeEl) noticeEl.style.display = 'none'; // Esconde aviso se chave existe
+
+            // Usar um proxy CORS se newsapi.org bloquear requisições diretas do localhost/client-side
+            // Ex: const url = `https://cors-anywhere.herokuapp.com/https://newsapi.org/v2/top-headlines?country=br&category=sports&pageSize=10&apiKey=${NEWSAPI_API_KEY}`;
+            const url = `https://newsapi.org/v2/top-headlines?country=br&category=sports&pageSize=10&apiKey=${NEWSAPI_API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) { 
+                    const errorData = await response.json().catch(()=>null);
+                    throw new Error(errorData?.message || `Erro HTTP: ${response.status}`);
+                }
+                const data = await response.json();
+
+                if (loadingMsg) loadingMsg.style.display = 'none';
+                newsList.innerHTML = ''; 
+                
+                if (data.articles && data.articles.length > 0) {
+                    data.articles.forEach(article => {
+                        if (!article.title || article.title.toLowerCase() === '[removed]' || !article.url) return;
+
+                        const li = document.createElement('li');
+                        
+                        if (article.urlToImage) {
+                            const img = document.createElement('img');
+                            img.src = article.urlToImage; img.alt = ""; // Alt vazio pois é decorativo e título é link
+                            img.onerror = () => { img.style.display = 'none'; }; // Esconder se imagem falhar
+                            li.appendChild(img);
+                        }
+
+                        const contentDiv = document.createElement('div');
+                        contentDiv.className = 'news-content-wrapper';
+                        
+                        const a = document.createElement('a');
+                        a.href = article.url; a.textContent = article.title;
+                        a.target = '_blank'; a.rel = 'noopener noreferrer';
+                        contentDiv.appendChild(a);
+                        
+                        const source = document.createElement('small');
+                        let sourceText = article.source.name ? `${article.source.name}` : 'Fonte desconhecida';
+                        if (article.publishedAt) {
+                             const date = new Date(article.publishedAt);
+                             const now = new Date();
+                             const diffMs = now - date;
+                             const diffSeconds = Math.floor(diffMs / 1000);
+                             const diffMinutes = Math.floor(diffSeconds / 60);
+                             const diffHours = Math.floor(diffMinutes / 60);
+                             const diffDays = Math.floor(diffHours / 24);
+
+                             if (diffDays > 1) sourceText += ` - há ${diffDays}d`;
+                             else if (diffDays === 1) sourceText += ` - ontem`;
+                             else if (diffHours >= 1) sourceText += ` - há ${diffHours}h`;
+                             else if (diffMinutes >= 1) sourceText += ` - há ${diffMinutes}min`;
+                             else sourceText += ` - agora`;
+                        }
+                        source.textContent = sourceText;
+                        contentDiv.appendChild(source);
+                        li.appendChild(contentDiv);
+                        newsList.appendChild(li);
+                    });
+                } else {
+                    newsList.innerHTML = '<li>Nenhuma notícia de esporte encontrada.</li>';
+                }
+            } catch (error) {
+                console.error("Erro API Notícias:", error);
+                if (loadingMsg) loadingMsg.style.display = 'none';
+                newsList.innerHTML = `<li class="news-error">Erro ao carregar notícias: ${error.message}</li>`;
+                if(noticeEl && NEWSAPI_API_KEY !== 'YOUR_NEWSAPI_KEY' && NEWSAPI_API_KEY !== '') noticeEl.style.display = 'block';
+            }
+        }
+        
+        // 07. Conversor de Moedas
+        async function initCurrencyConverter() {
+            const amountInput = document.getElementById('amountToConvert');
+            const fromSelect = document.getElementById('fromCurrency');
+            const toSelect = document.getElementById('toCurrency');
+            const convertBtn = document.getElementById('convertCurrencyBtn');
+            const resultDiv = document.getElementById('conversionResult');
+
+            if (!amountInput || !fromSelect || !toSelect || !convertBtn || !resultDiv) return;
+
+            const popularCurrencies = ['USD', 'EUR', 'BRL', 'JPY', 'GBP', 'CAD', 'AUD', 'CNY', 'CHF', 'NZD'];
+            
+            async function fetchCurrenciesAndPopulate() {
+                try {
+                    resultDiv.textContent = 'Carregando moedas...';
+                    const response = await fetch('https://api.frankfurter.app/currencies');
+                    if (!response.ok) throw new Error('Falha ao carregar lista de moedas.');
+                    const currencies = await response.json();
+                    
+                    [fromSelect, toSelect].forEach(sel => sel.innerHTML = ''); // Limpar selects
+
+                    // Adicionar populares primeiro
+                    popularCurrencies.forEach(code => {
+                        if (currencies[code]) {
+                            addOption(fromSelect, code, currencies[code]);
+                            addOption(toSelect, code, currencies[code]);
+                        }
+                    });
+                    // Adicionar uma linha separadora se houver outras moedas
+                    if (Object.keys(currencies).some(c => !popularCurrencies.includes(c)) && popularCurrencies.length > 0) {
+                        const separator = document.createElement('option');
+                        separator.disabled = true;
+                        separator.textContent = '──────────';
+                        [fromSelect, toSelect].forEach(s => s.appendChild(separator.cloneNode(true)));
+                    }
+                    // Adicionar restantes
+                    for (const code in currencies) {
+                        if (!popularCurrencies.includes(code)) {
+                            addOption(fromSelect, code, currencies[code]);
+                            addOption(toSelect, code, currencies[code]);
+                        }
+                    }
+                    fromSelect.value = localStorage.getItem('currencyConverterFrom') || 'USD';
+                    toSelect.value = localStorage.getItem('currencyConverterTo') || 'BRL';
+                    convertCurrency(); // Converter com valores padrão/salvos
+                } catch (e) {
+                    resultDiv.textContent = `Erro: ${e.message}`;
+                    console.error("Erro ao carregar moedas:", e);
+                }
+            }
+
+            function addOption(selectElement, code, name) {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = `${code} (${name})`;
+                selectElement.appendChild(option);
+            }
+
+            async function convertCurrency() {
+                const amount = parseFloat(amountInput.value);
+                const from = fromSelect.value;
+                const to = toSelect.value;
+
+                if (isNaN(amount) || amount <= 0) {
+                    resultDiv.textContent = "Insira um valor válido.";
+                    return;
+                }
+                if (!from || !to) {
+                    resultDiv.textContent = "Selecione as moedas.";
+                    return;
+                }
+
+                localStorage.setItem('currencyConverterFrom', from);
+                localStorage.setItem('currencyConverterTo', to);
+
+                if (from === to) {
+                    resultDiv.textContent = formatCurrency(amount, from) + " = " + formatCurrency(amount, to);
+                    return;
+                }
+
+                resultDiv.textContent = "Convertendo...";
+                try {
+                    const response = await fetch(`https://api.frankfurter.app/latest?amount=${amount}&from=${from}&to=${to}`);
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => null);
+                        throw new Error(errorData?.message ||'Erro na conversão.');
+                    }
+                    const data = await response.json();
+                    if (data.rates && data.rates[to]) {
+                        resultDiv.textContent = `${formatCurrency(amount, from)} = ${formatCurrency(data.rates[to], to, 4)}`;
+                    } else {
+                        resultDiv.textContent = "Conversão indisponível para estas moedas.";
+                    }
+                } catch (e) {
+                    resultDiv.textContent = `Erro: ${e.message}`;
+                    console.error("Erro na conversão de moeda:", e);
+                }
+            }
+
+            function formatCurrency(value, currencyCode, maxFractionDigits = 2) {
+                try {
+                    return value.toLocaleString('pt-BR', { style: 'currency', currency: currencyCode, maximumFractionDigits: maxFractionDigits });
+                } catch (e) { // Fallback se o currencyCode não for reconhecido pelo toLocaleString
+                    return `${value.toFixed(maxFractionDigits)} ${currencyCode}`;
+                }
+            }
+
+            convertBtn.addEventListener('click', convertCurrency);
+            [amountInput, fromSelect, toSelect].forEach(el => {
+                el.addEventListener('change', convertCurrency);
+                if (el.type === 'number') {
+                    el.addEventListener('input', () => { if(el.value) convertCurrency()});
+                }
+            });
+            
+            fetchCurrenciesAndPopulate();
+        }
+
+        // 08. Organizar Widgets (Drag and Drop)
+        function initWidgetDragAndDrop() {
+            const container = document.getElementById('widgetContainer');
+            if (!container) return;
+            let draggedItem = null, placeholder = null;
+
+            function createPlaceholder(draggedEl) {
+                const el = document.createElement('div');
+                el.classList.add('widget-placeholder-drag'); // Para estilização se necessário
+                el.style.background = 'rgba(255,255,255,0.03)';
+                el.style.border = '2px dashed var(--accent-color)';
+                el.style.borderRadius = 'var(--border-radius-large)';
+                el.style.margin = '0'; 
+                el.style.boxSizing = 'border-box';
+                el.style.width = draggedEl.offsetWidth + 'px';
+                el.style.height = draggedEl.offsetHeight + 'px';
+                // Tenta copiar o grid-column/row do item original
+                el.style.gridColumn = getComputedStyle(draggedEl).gridColumn;
+                el.style.gridRow = getComputedStyle(draggedEl).gridRow;
+                return el;
+            }
+
+            container.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('widget') && e.target.draggable) {
+                    draggedItem = e.target;
+                    placeholder = createPlaceholder(draggedItem);
+                    
+                    setTimeout(() => { // Para permitir que o browser capture o 'fantasma' original
+                        draggedItem.classList.add('dragging');
+                        // Insere o placeholder e esconde o original.
+                        // A posição do placeholder será ajustada no dragover.
+                        // container.insertBefore(placeholder, draggedItem); 
+                        // draggedItem.style.display = 'none'; // Esconde o original
+                    }, 0);
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', ''); // Necessário para Firefox
+                }
+            });
+
+            container.addEventListener('dragend', (e) => {
+                if (draggedItem) {
+                    // if (draggedItem.style.display === 'none') { // Se estava escondido
+                    //    container.insertBefore(draggedItem, placeholder); // Reposiciona
+                    // }
+                    draggedItem.classList.remove('dragging');
+                    // draggedItem.style.display = '';
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.remove();
+                    }
+                    draggedItem = null;
+                    placeholder = null;
+                }
+            });
+            
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault(); 
+                if (!draggedItem || !placeholder) return;
+                e.dataTransfer.dropEffect = 'move';
+
+                // Lógica para posicionar o placeholder
+                const afterElement = getDragAfterElement(container, e.clientX, e.clientY);
+                
+                // Primeira vez que entra, ou se o placeholder não está no DOM
+                if (!placeholder.parentNode) {
+                    if (afterElement == null) {
+                        container.appendChild(placeholder);
+                    } else {
+                        container.insertBefore(placeholder, afterElement);
+                    }
+                } else { // Placeholder já está no DOM, apenas move se necessário
+                    if (afterElement == null) {
+                         if (container.lastChild !== placeholder) container.appendChild(placeholder);
+                    } else {
+                        if (afterElement !== placeholder && afterElement !== placeholder.nextSibling) { // Evita auto-inserção
+                           container.insertBefore(placeholder, afterElement);
+                        }
+                    }
+                }
+            });
+
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedItem && placeholder && placeholder.parentNode) {
+                    // Insere o item arrastado na posição do placeholder
+                    container.insertBefore(draggedItem, placeholder);
+                }
+                // Limpeza é feita no dragend
+            });
+
+            // Função auxiliar para encontrar o elemento após o qual o item arrastado deve ser inserido
+            function getDragAfterElement(container, x, y) {
+                const draggableElements = [...container.querySelectorAll('.widget:not(.dragging), .widget-placeholder-drag')];
+
+                return draggableElements.reduce((closest, child) => {
+                    if (child === draggedItem || child === placeholder) return closest; // Não comparar com o próprio item ou seu placeholder atual
+
+                    const box = child.getBoundingClientRect();
+                    // Distância do mouse ao centro vertical do elemento
+                    const offsetY = y - box.top - box.height / 2;
+                    // Distância do mouse ao centro horizontal do elemento
+                    const offsetX = x - box.left - box.width / 2;
+                    
+                    // Prioriza elementos que estão verticalmente mais próximos e acima
+                    // E horizontalmente mais próximos (para desempate em linhas)
+                    if (offsetY < 0 && offsetY > closest.offsetY) {
+                        return { offsetY: offsetY, offsetX: offsetX, element: child };
+                    } 
+                    // Se estiver na mesma "linha" (offsetY próximo de 0 ou positivo mas pequeno)
+                    // e mais à esquerda do mouse (offsetX < 0), pode ser um candidato
+                    else if (offsetY >=0 && offsetY < closest.positiveOffsetY ) {
+                         if(offsetX < 0 && offsetX > closest.offsetXWhenPositiveY){
+                             return { ...closest, positiveOffsetY: offsetY, offsetXWhenPositiveY: offsetX, element: child };
+                         } else if (closest.element == null || offsetY < closest.positiveOffsetY) { // Se é o primeiro abaixo
+                             return { ...closest, positiveOffsetY: offsetY, offsetXWhenPositiveY: offsetX, element: child };
+                         }
+                    }
+                    return closest;
+                }, { offsetY: Number.NEGATIVE_INFINITY, offsetX: Number.NEGATIVE_INFINITY, positiveOffsetY: Number.POSITIVE_INFINITY, offsetXWhenPositiveY: Number.NEGATIVE_INFINITY, element: null }).element;
+            }
+        }
+    </script>
+</body>
+</html>

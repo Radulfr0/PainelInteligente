@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Painel Pessoal </title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F8F9FF;
+            --card-bg: #FFFFFF;
+            --main-text-color: #0F172A;
+            --secondary-text-color: #64748B;
+            --primary-purple: #6366F1;
+            --light-purple: #E0E7FF;
+            --border-color: #E2E8F0;
+            --danger-red: #FF6B6B;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--main-text-color);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        main {
+            max-width: 1200px;
+            width: 100%;
+            background: none;
+            border-radius: 12px;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--main-text-color);
+            font-size: 20px;
+            font-weight: 600;
+            width: 100%;
+            text-align: left;
+        }
+
+        /* --- Relógio de Ponteiros e Calendário --- */
+        #clock-calendar-section {
+            gap: 20px;
+        }
+        #analogClockCanvas {
+            width: 150px;
+            height: 150px;
+            background: var(--bg-color);
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            margin: 0 auto 10px auto;
+            display: block;
+        }
+
+        #digitalClockDisplay {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--main-text-color);
+            background-color: var(--bg-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            width: fit-content;
+        }
+
+        #calendar {
+            width: 100%;
+            font-size: 1rem;
+            text-align: center;
+            color: var(--secondary-text-color);
+        }
+        #calendar h3 {
+            font-size: 1.1rem;
+            color: var(--main-text-color);
+            font-weight: 500;
+        }
+        #calendar table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #calendar th, #calendar td {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            color: var(--secondary-text-color);
+        }
+        #calendar th {
+            background-color: var(--bg-color);
+            color: var(--main-text-color);
+            font-weight: 600;
+        }
+        #calendar td.today {
+            background-color: var(--primary-purple);
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+        }
+        #calendar button {
+            background-color: var(--card-bg);
+            color: var(--primary-purple);
+            border: 1px solid var(--primary-purple);
+            font-size: 1rem;
+        }
+        #calendar button:hover {
+            background-color: var(--light-purple);
+        }
+
+        /* --- Estilos para Inputs e Botões --- */
+        input[type="text"], input[type="number"], input[type="search"], select, textarea {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+            background: var(--card-bg);
+            color: var(--main-text-color);
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-purple);
+        }
+
+        button {
+            background-color: var(--primary-purple);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            padding: 10px 18px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #4f46e5;
+        }
+
+        /* --- Previsão do tempo --- */
+        #weatherForm {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        #weatherForm input { margin-bottom: 0; }
+        
+        #weatherResult {
+            text-align: left;
+            font-size: 1rem;
+            width: 100%;
+            padding-top: 15px;
+            color: var(--secondary-text-color);
+        }
+        #weatherResult h3 {
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--main-text-color);
+        }
+        #weatherResult p i {
+            color: var(--primary-purple);
+            min-width: 25px;
+            text-align: center;
+        }
+        #weatherResult .main-weather-icon {
+            font-size: 3rem;
+            color: var(--primary-purple);
+        }
+
+        /* --- Bloco de Notas --- */
+        #notes {
+            background-color: var(--bg-color);
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        /* --- Lista de Tarefas --- */
+        ul#taskList {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        ul#taskList li {
+            background: var(--bg-color);
+            margin: 8px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--light-purple);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1rem;
+            color: var(--main-text-color);
+        }
+        ul#taskList li.completed {
+            text-decoration: line-through;
+            color: var(--secondary-text-color);
+            border-left-color: #ccc;
+        }
+        ul#taskList button {
+            background-color: transparent;
+            border: none;
+            color: var(--danger-red);
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 5px;
+        }
+        ul#taskList li .task-text {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        
+        /* --- Widget de Localização --- */
+        #locationResult {
+            font-size: 1rem;
+            min-height: 40px;
+            color: var(--secondary-text-color);
+        }
+        #map {
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            margin-top: 15px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+        }
+
+        /* --- Quadro de Desenho Simples --- */
+        #drawingCanvas {
+            background-color: #fff;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+        }
+        #drawingControls {
+            margin-top: 15px;
+        }
+        #clearCanvas {
+            background-color: var(--secondary-text-color);
+        }
+        #clearCanvas:hover {
+            background-color: #4a5568;
+        }
+
+        /* --- Conversor de Moedas --- */
+        #currencyConverter form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+        #conversionResult {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-purple);
+        }
+
+        /* --- Notícias de Futebol --- */
+        #footballNews { grid-column: span 2; }
+        #newsContainer {
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 10px;
+            text-align: left;
+        }
+        #newsList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+        #newsList li {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        #newsList li a {
+            color: var(--primary-purple);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        #newsList li a:hover {
+            text-decoration: underline;
+        }
+        #newsList li span {
+            color: var(--secondary-text-color);
+            font-size: 0.8rem;
+        }
+
+        /* --- Widget de Player de Música --- */
+        #musicPlayerWidget {
+            grid-column: span 2;
+        }
+
+        #musicSearchForm {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        #musicSearchForm input {
+            margin-bottom: 0;
+        }
+
+        .music-results-container {
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+            padding-right: 10px;
+        }
+        
+        .placeholder-text {
+            color: var(--secondary-text-color);
+            text-align: center;
+        }
+
+        .music-track-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: var(--bg-color);
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .music-track-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .music-track-info {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .music-track-info h4 {
+            margin: 0 0 4px 0;
+            font-weight: 600;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--main-text-color);
+        }
+
+        .music-track-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .music-track-item audio {
+            height: 40px;
+            flex-shrink: 0;
+        }
+
+        .music-track-item audio::-webkit-media-controls-panel {
+            background-color: var(--light-purple);
+        }
+        .music-track-item audio::-webkit-media-controls-play-button,
+        .music-track-item audio::-webkit-media-controls-mute-button {
+            background-color: var(--primary-purple);
+            border-radius: 50%;
+        }
+
+        /* --- Media Queries --- */
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            main {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            section {
+                grid-column: span 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section id="clock-calendar-section">
+            <h2>Relógio e Calendário</h2>
+            <canvas id="analogClockCanvas" width="300" height="300"></canvas>
+            <div id="digitalClockDisplay" aria-live="polite" aria-atomic="true"></div>
+            <div id="calendar">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <button id="prevMonth"><</button>
+                    <h3 id="currentMonthYear"></h3>
+                    <button id="nextMonth">></button>
+                </div>
+                <table id="calendarTable">
+                    <thead>
+                        <tr>
+                            <th>Dom</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sáb</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="weatherWidget">
+            <h2>Previsão do Tempo</h2>
+            <form id="weatherForm" aria-label="Formulário para buscar a previsão do tempo">
+                <input type="text" id="city" placeholder="Digite a cidade" aria-label="Campo para inserir nome da cidade" required />
+                <button type="submit">Buscar</button>
+            </form>
+            <div id="weatherResult" aria-live="polite" aria-atomic="true">
+                <p>Digite uma cidade para ver a previsão.</p>
+            </div>
+        </section>
+
+        <section id="notes-section">
+            <h2>Bloco de Notas Rápido</h2>
+            <textarea id="notes" placeholder="Escreva suas anotações aqui..."></textarea>
+        </section>
+
+        <section id="taskSection">
+            <h2>Lista de Tarefas</h2>
+            <input id="taskInput" type="text" placeholder="Digite uma tarefa e pressione Enter" aria-label="Campo para inserir tarefa" />
+            <ul id="taskList" aria-live="polite"></ul>
+        </section>
+
+        <section id="locationWidget">
+            <h2>Minha Localização</h2>
+            <div id="locationResult">
+                <p>Clique para obter sua localização.</p>
+            </div>
+            <button id="locationBtn">Obter Localização</button>
+            <div id="map"></div>
+        </section>
+
+        <section id="drawingWidget">
+            <h2>Quadro de Desenho</h2>
+            <canvas id="drawingCanvas" width="300" height="200"></canvas>
+            <div id="drawingControls">
+                <input type="color" id="colorPicker" value="#6366F1">
+                <input type="range" id="brushSize" min="1" max="10" value="3">
+                <button id="clearCanvas">Limpar</button>
+            </div>
+        </section>
+
+        <section id="currencyConverter">
+            <h2>Conversor de Moedas</h2>
+            <form>
+                <input type="number" id="amount" value="1" min="0.01" step="0.01">
+                <select id="fromCurrency">
+                    <option value="USD">USD - Dólar Americano</option>
+                    <option value="BRL" selected>BRL - Real Brasileiro</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - Libra Esterlina</option>
+                    <option value="JPY">JPY - Iene Japonês</option>
+                </select>
+                para
+                <select id="toCurrency">
+                    <option value="BRL">BRL - Real Brasileiro</option>
+                    <option value="USD" selected>USD - Dólar Americano</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - Libra Esterlina</option>
+                    <option value="JPY">JPY - Iene Japonês</option>
+                </select>
+                <button type="button" id="convertBtn">Converter</button>
+            </form>
+            <div id="conversionResult"></div>
+        </section>
+
+        <section id="musicPlayerWidget">
+            <h2>Explorar Músicas</h2>
+            <form id="musicSearchForm">
+                <input type="search" id="musicSearchInput" placeholder="Digite o nome de um artista ou música..." required>
+                <button type="submit">Buscar</button>
+            </form>
+            <div id="musicResults" class="music-results-container">
+                <p class="placeholder-text">Busque por suas músicas favoritas para começar.</p>
+            </div>
+        </section>
+
+        <section id="footballNews">
+            <h2>Jogos de Futebol (via RSS)</h2>
+            <div id="newsContainer">
+                <p class="news-loading">Carregando jogos...</p>
+                <ul id="newsList"></ul>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // --- Relógio Analógico e Digital ---
+        const analogClockCanvas = document.getElementById('analogClockCanvas'); const ctx = analogClockCanvas.getContext('2d'); const radius = analogClockCanvas.width / 2; ctx.translate(radius, radius); 
+        const digitalClockDisplay = document.getElementById('digitalClockDisplay');
+        function updateDigitalClock() { const now = new Date(); const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' }; const formattedTime = now.toLocaleTimeString('pt-BR', options); digitalClockDisplay.textContent = formattedTime; }
+        function drawClock() { ctx.clearRect(-radius, -radius, analogClockCanvas.width, analogClockCanvas.height); ctx.beginPath(); ctx.arc(0, 0, radius * 0.9, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fill(); ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = radius * 0.03; ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, radius * 0.05, 0, 2 * Math.PI); ctx.fillStyle = '#0F172A'; ctx.fill(); for (let i = 0; i < 12; i++) { let angle = (i * 30 * Math.PI / 180); ctx.save(); ctx.rotate(angle); ctx.beginPath(); ctx.lineWidth = radius * 0.03; ctx.strokeStyle = '#64748B'; ctx.moveTo(0, -radius * 0.8); ctx.lineTo(0, -radius * 0.9); ctx.stroke(); ctx.restore(); } const now = new Date(); let hour = now.getHours(); let minute = now.getMinutes(); let second = now.getSeconds(); hour = hour % 12; let hourAngle = (hour * Math.PI / 6) + (minute * Math.PI / (6 * 60)) + (second * Math.PI / (360 * 60)); drawHand(hourAngle, radius * 0.5, radius * 0.05, '#0F172A'); let minuteAngle = (minute * Math.PI / 30) + (second * Math.PI / (30 * 60)); drawHand(minuteAngle, radius * 0.7, radius * 0.03, '#0F172A'); let secondAngle = (second * Math.PI / 30); drawHand(secondAngle, radius * 0.8, radius * 0.02, '#6366F1'); ctx.beginPath(); ctx.arc(0, 0, radius * 0.03, 0, 2 * Math.PI); ctx.fillStyle = '#6366F1'; ctx.fill(); }
+        function drawHand(angle, length, width, color) { ctx.beginPath(); ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.strokeStyle = color; ctx.moveTo(0, 0); ctx.rotate(angle); ctx.lineTo(0, -length); ctx.stroke(); ctx.rotate(-angle); }
+        setInterval(() => { drawClock(); updateDigitalClock(); }, 1000);
+        drawClock(); updateDigitalClock();
+
+        // --- Calendário Dinâmico ---
+        const calendarElement = document.getElementById('calendar'); const currentMonthYearElement = document.getElementById('currentMonthYear'); const calendarTableBody = calendarElement.querySelector('tbody'); const prevMonthBtn = document.getElementById('prevMonth'); const nextMonthBtn = document.getElementById('nextMonth'); let currentDate = new Date();
+        function renderCalendar() { const year = currentDate.getFullYear(); const month = currentDate.getMonth(); const today = new Date(); const todayDay = today.getDate(); const todayMonth = today.getMonth(); const todayYear = today.getFullYear(); const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']; currentMonthYearElement.textContent = `${monthNames[month]} ${year}`; calendarTableBody.innerHTML = ''; const firstDayOfMonth = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); let date = 1; for (let i = 0; i < 6; i++) { const row = document.createElement('tr'); for (let j = 0; j < 7; j++) { const cell = document.createElement('td'); if (i === 0 && j < firstDayOfMonth) { cell.textContent = ''; } else if (date > daysInMonth) { cell.textContent = ''; } else { cell.textContent = date; if (date === todayDay && month === todayMonth && year === todayYear) { cell.classList.add('today'); } date++; } row.appendChild(cell); } if (date > daysInMonth && row.querySelectorAll('td:not(:empty)').length === 0 && i > 0) { break; } calendarTableBody.appendChild(row); } }
+        prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+        nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+        renderCalendar();
+        
+        // --- WIDGET DE PREVISÃO DO TEMPO COM API WTTR.IN (MAIS SIMPLES E ROBUSTA) ---
+        const weatherForm = document.getElementById('weatherForm');
+        const cityInput = document.getElementById('city');
+        const weatherResult = document.getElementById('weatherResult');
+
+        const weatherIconMapWttr = { "Clear": "fa-sun", "Sunny": "fa-sun", "Partly cloudy": "fa-cloud-sun", "Cloudy": "fa-cloud", "Overcast": "fa-cloud", "Mist": "fa-smog", "Patchy rain possible": "fa-cloud-rain", "Patchy snow possible": "fa-snowflake", "Patchy sleet possible": "fa-cloud-meatball", "Patchy freezing drizzle possible": "fa-icicles", "Thundery outbreaks possible": "fa-bolt", "Blowing snow": "fa-wind", "Blizzard": "fa-snowflake", "Fog": "fa-smog", "Freezing fog": "fa-smog", "Patchy light drizzle": "fa-cloud-rain", "Light drizzle": "fa-cloud-rain", "Freezing drizzle": "fa-icicles", "Heavy freezing drizzle": "fa-icicles", "Patchy light rain": "fa-cloud-rain", "Light rain": "fa-cloud-rain", "Moderate rain at times": "fa-cloud-showers-heavy", "Moderate rain": "fa-cloud-showers-heavy", "Heavy rain at times": "fa-cloud-showers-heavy", "Heavy rain": "fa-cloud-showers-heavy", "Light freezing rain": "fa-icicles", "Moderate or heavy freezing rain": "fa-icicles", "Light sleet": "fa-cloud-meatball", "Moderate or heavy sleet": "fa-cloud-meatball", "Patchy light snow": "fa-snowflake", "Light snow": "fa-snowflake", "Patchy moderate snow": "fa-snowflake", "Moderate snow": "fa-snowflake", "Patchy heavy snow": "fa-snowflake", "Heavy snow": "fa-snowflake", "Ice pellets": "fa-ice-cream", "Light rain shower": "fa-cloud-sun-rain", "Moderate or heavy rain shower": "fa-cloud-showers-heavy", "Torrential rain shower": "fa-poo-storm", "Light sleet showers": "fa-cloud-meatball", "Moderate or heavy sleet showers": "fa-cloud-meatball", "Light snow showers": "fa-snowflake", "Moderate or heavy snow showers": "fa-snowflake", "Light showers of ice pellets": "fa-ice-cream", "Moderate or heavy showers of ice pellets": "fa-ice-cream", "Patchy light rain with thunder": "fa-bolt", "Moderate or heavy rain with thunder": "fa-bolt", "Patchy light snow with thunder": "fa-bolt", "Moderate or heavy snow with thunder": "fa-bolt" };
+
+        async function handleWeatherSearchWttr(e) {
+            e.preventDefault();
+            const city = cityInput.value.trim();
+            if (!city) return;
+            weatherResult.innerHTML = `<p>Buscando por "${city}"...</p>`;
+            const apiUrl = `https://wttr.in/${encodeURIComponent(city)}?format=j1`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) { throw new Error('Cidade não encontrada'); }
+                const data = await response.json();
+                displayWeatherWttr(data);
+            } catch (error) {
+                console.error("Erro ao buscar o tempo:", error);
+                weatherResult.innerHTML = `<p>Não foi possível encontrar a cidade "${city}". Tente um nome diferente ou em inglês.</p>`;
+            }
+        }
+
+        function displayWeatherWttr(data) {
+            const current = data.current_condition[0]; const cityInfo = data.nearest_area[0];
+            const weatherDescription = current.weatherDesc[0].value;
+            const iconClass = weatherIconMapWttr[weatherDescription] || 'fa-question-circle';
+            const cityName = `${cityInfo.areaName[0].value}, ${cityInfo.region[0].value}`;
+            weatherResult.innerHTML = ` <i class="fas ${iconClass} main-weather-icon"></i> <h3>${cityName}</h3> <p><i class="fas fa-thermometer-half"></i> Temperatura: ${current.temp_C}°C (Sensação de ${current.FeelsLikeC}°C)</p> <p><i class="fas fa-cloud-sun"></i> Condição: ${weatherDescription}</p> <p><i class="fas fa-tint"></i> Umidade: ${current.humidity}%</p> <p><i class="fas fa-wind"></i> Vento: ${current.windspeedKmph} km/h</p> `;
+        }
+        weatherForm.addEventListener('submit', handleWeatherSearchWttr);
+
+        // --- Bloco de Notas Rápido ---
+        const notes = document.getElementById('notes'); notes.value = localStorage.getItem('notes') || ''; notes.addEventListener('input', () => { localStorage.setItem('notes', notes.value); });
+
+        // --- Lista de Tarefas ---
+        const taskInput = document.getElementById('taskInput'); const taskList = document.getElementById('taskList');
+        function loadTasks() { const tasks = JSON.parse(localStorage.getItem('tasks')) || []; tasks.forEach(task => addTaskToDOM(task.text, task.completed)); }
+        function saveTasks() { const tasks = []; taskList.querySelectorAll('li').forEach(li => { tasks.push({ text: li.querySelector('.task-text').textContent, completed: li.classList.contains('completed') }); }); localStorage.setItem('tasks', JSON.stringify(tasks)); }
+        function addTaskToDOM(taskText, completed = false) { const li = document.createElement('li'); const span = document.createElement('span'); span.classList.add('task-text'); span.textContent = taskText; li.appendChild(span); if (completed) { li.classList.add('completed'); } const divButtons = document.createElement('div'); const completeBtn = document.createElement('button'); completeBtn.innerHTML = '<i class="fas fa-check"></i>'; completeBtn.style.color = '#34D399'; completeBtn.title = completed ? 'Desmarcar' : 'Concluir'; completeBtn.onclick = () => { li.classList.toggle('completed'); completeBtn.title = li.classList.contains('completed') ? 'Desmarcar' : 'Concluir'; saveTasks(); }; divButtons.appendChild(completeBtn); const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '<i class="fas fa-trash"></i>'; deleteBtn.title = 'Remover'; deleteBtn.onclick = () => { li.remove(); saveTasks(); }; divButtons.appendChild(deleteBtn); li.appendChild(divButtons); taskList.appendChild(li); }
+        taskInput.addEventListener('keypress', e => { if (e.key === 'Enter' && taskInput.value.trim() !== '') { addTaskToDOM(taskInput.value.trim()); taskInput.value = ''; saveTasks(); } });
+        loadTasks();
+
+        // --- Widget de Localização ---
+        const locationBtn = document.getElementById('locationBtn'); const locationResult = document.getElementById('locationResult'); const mapDiv = document.getElementById('map'); let mymap = null;
+        locationBtn.addEventListener('click', () => { locationResult.textContent = 'Buscando localização...'; if (mymap) { mymap.remove(); mymap = null; } mapDiv.innerHTML = 'Carregando mapa...'; if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( (position) => { const lat = position.coords.latitude; const lon = position.coords.longitude; locationResult.innerHTML = `Latitude: ${lat.toFixed(4)}<br>Longitude: ${lon.toFixed(4)}`; mymap = L.map('map').setView([lat, lon], 15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(mymap); L.marker([lat, lon]).addTo(mymap).bindPopup('Sua localização atual.').openPopup(); }, (error) => { locationResult.textContent = 'Erro ao obter localização.'; console.error('Erro de geolocalização:', error); } ); } else { locationResult.textContent = 'Geolocalização não é suportada.'; } });
+
+        // --- Quadro de Desenho ---
+        const canvas = document.getElementById('drawingCanvas'); const ctxDraw = canvas.getContext('2d'); const colorPicker = document.getElementById('colorPicker'); const brushSize = document.getElementById('brushSize'); const clearCanvasBtn = document.getElementById('clearCanvas'); let isDrawing = false; let lastX = 0; let lastY = 0; ctxDraw.strokeStyle = colorPicker.value; ctxDraw.lineWidth = brushSize.value; ctxDraw.lineJoin = 'round'; ctxDraw.lineCap = 'round'; canvas.addEventListener('mousedown', (e) => { isDrawing = true; [lastX, lastY] = [e.offsetX, e.offsetY]; }); canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; ctxDraw.beginPath(); ctxDraw.moveTo(lastX, lastY); ctxDraw.lineTo(e.offsetX, e.offsetY); ctxDraw.stroke(); [lastX, lastY] = [e.offsetX, e.offsetY]; }); canvas.addEventListener('mouseup', () => isDrawing = false); canvas.addEventListener('mouseout', () => isDrawing = false); colorPicker.addEventListener('input', (e) => { ctxDraw.strokeStyle = e.target.value; }); brushSize.addEventListener('input', (e) => { ctxDraw.lineWidth = e.target.value; }); clearCanvasBtn.addEventListener('click', () => { ctxDraw.clearRect(0, 0, canvas.width, canvas.height); });
+
+        // --- Conversor de Moedas ---
+        const amountInput = document.getElementById('amount'); const fromCurrencySelect = document.getElementById('fromCurrency'); const toCurrencySelect = document.getElementById('toCurrency'); const convertBtn = document.getElementById('convertBtn'); const conversionResult = document.getElementById('conversionResult');
+        convertBtn.addEventListener('click', () => { const amount = parseFloat(amountInput.value); const fromCurrency = fromCurrencySelect.value; const toCurrency = toCurrencySelect.value; if (isNaN(amount) || amount <= 0) { conversionResult.textContent = 'Insira um valor válido.'; return; } conversionResult.textContent = 'Convertendo...'; const exchangeRates = { 'USD': { 'BRL': 5.20, 'EUR': 0.92, 'GBP': 0.79, 'JPY': 155.00, 'USD': 1 }, 'BRL': { 'USD': 0.1923, 'EUR': 0.1769, 'GBP': 0.1519, 'JPY': 29.8077, 'BRL': 1 }, 'EUR': { 'USD': 1.0869, 'BRL': 5.6522, 'GBP': 0.8587, 'JPY': 168.4782, 'EUR': 1 }, 'GBP': { 'USD': 1.2658, 'BRL': 6.5823, 'EUR': 1.1648, 'JPY': 197.00, 'GBP': 1 }, 'JPY': { 'USD': 0.00645, 'BRL': 0.0335, 'EUR': 0.00593, 'GBP': 0.00507, 'JPY': 1 } }; const rate = exchangeRates[fromCurrency][toCurrency]; const convertedAmount = amount * rate; conversionResult.textContent = `${amount.toFixed(2)} ${fromCurrency} = ${convertedAmount.toFixed(2)} ${toCurrency}`; });
+
+        // --- Jogos de Futebol (via RSS) ---
+        const newsList = document.getElementById('newsList'); const newsContainer = document.getElementById('newsContainer');
+        async function fetchFootballGames() { newsList.innerHTML = ''; const rssUrl = 'https://www.espn.com/espn/rss/news'; const rss2jsonProxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`; try { const response = await fetch(rss2jsonProxyUrl); if (!response.ok) { throw new Error(`Falha: ${response.status}`); } const data = await response.json(); if (data.status === 'ok' && data.items && data.items.length > 0) { newsContainer.querySelector('.news-loading')?.remove(); data.items.slice(0, 5).forEach(item => { const li = document.createElement('li'); li.innerHTML = `<div class="news-content"><a href="${item.link}" target="_blank">${item.title}</a><br><span>${item.author || data.feed.title} - ${new Date(item.pubDate).toLocaleDateString('pt-BR')}</span></div>`; newsList.appendChild(li); }); } else { newsContainer.innerHTML = '<p>Nenhuma notícia encontrada.</p>'; } } catch (error) { console.error('Erro ao buscar notícias:', error); newsContainer.innerHTML = `<p>Erro ao carregar notícias.</p>`; } }
+        fetchFootballGames();
+
+        // --- Widget de Player de Música (iTunes API) ---
+        const musicSearchForm = document.getElementById('musicSearchForm'); const musicSearchInput = document.getElementById('musicSearchInput'); const musicResultsContainer = document.getElementById('musicResults');
+        async function searchMusic(term) { const baseUrl = 'https://itunes.apple.com/search'; const queryUrl = `${baseUrl}?term=${encodeURIComponent(term)}&country=BR&media=music&entity=song&limit=10`; musicResultsContainer.innerHTML = '<p class="placeholder-text">Buscando músicas...</p>'; try { const response = await fetch(queryUrl); if (!response.ok) { throw new Error(`Erro na API: ${response.status}`); } const data = await response.json(); renderMusicResults(data.results); } catch (error) { console.error('Falha ao buscar músicas:', error); musicResultsContainer.innerHTML = '<p class="placeholder-text">Ocorreu um erro ao buscar. Tente novamente.</p>'; } }
+        function renderMusicResults(tracks) { musicResultsContainer.innerHTML = ''; if (!tracks || tracks.length === 0) { musicResultsContainer.innerHTML = '<p class="placeholder-text">Nenhuma música encontrada para sua busca.</p>'; return; } tracks.forEach(track => { const trackElement = document.createElement('div'); trackElement.classList.add('music-track-item'); const artworkUrl = track.artworkUrl100 ? track.artworkUrl100.replace('100x100', '60x60') : 'https://via.placeholder.com/60'; trackElement.innerHTML = ` <img src="${artworkUrl}" alt="Capa do álbum de ${track.trackName}"> <div class="music-track-info"> <h4>${track.trackName}</h4> <p>${track.artistName} - ${track.collectionName}</p> </div> <audio controls src="${track.previewUrl}"></audio> `; musicResultsContainer.appendChild(trackElement); }); }
+        musicSearchForm.addEventListener('submit', (e) => { e.preventDefault(); const searchTerm = musicSearchInput.value.trim(); if (searchTerm) { searchMusic(searchTerm); } });
+        
+    </script>
+</body>
+</html>
